@@ -37,3 +37,98 @@
 @media (max-width:767px){
   .site-header,.modal-backdrop{backdrop-filter:none;-webkit-backdrop-filter:none}
 }
+
+/* Skyclub 1.3 — Paper Play + Spark : final de manche animé.
+   Aucun dessin externe ni police réseau : tout fonctionne aussi sur Render Free. */
+:root {
+  --paper-cream: #f8eddb;
+  --paper-ivory: #fff8ed;
+  --paper-ink: #3e2f26;
+  --paper-terracotta: #c76f51;
+  --paper-sage: #73865b;
+  --paper-gold: #f5bd58;
+  --paper-coral: #ff745e;
+}
+.finale-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 70vh;
+  padding: clamp(20px, 3vw, 50px) clamp(14px, 3vw, 38px) 50px;
+  color: var(--paper-ink);
+  background:
+    radial-gradient(circle at 14% 14%, rgba(255, 116, 94, .20), transparent 29%),
+    radial-gradient(circle at 91% 11%, rgba(245, 189, 88, .25), transparent 30%),
+    radial-gradient(circle at 55% 80%, rgba(115, 134, 91, .12), transparent 43%),
+    repeating-linear-gradient(33deg, transparent 0 6px, rgba(96, 63, 39, .014) 7px 8px),
+    var(--paper-cream);
+  overflow: hidden;
+}
+.finale-page::before, .finale-page::after {
+  content: '✦'; position: absolute; pointer-events: none; z-index: -1;
+  font-size: clamp(85px, 16vw, 220px); line-height: 1; opacity: .11;
+  color: var(--paper-coral); transform: rotate(-17deg);
+}
+.finale-page::before { top: -52px; left: -42px; }
+.finale-page::after { right: -38px; bottom: -50px; color: var(--paper-sage); transform: rotate(20deg); }
+.finale-heading { text-align: center; position: relative; margin: 0 auto 26px; max-width: 860px; }
+.finale-eyebrow { display: inline-block; color: #a75d3e; font-size: 11px; font-weight: 900; letter-spacing: .14em; padding: 9px 17px; border-radius: 100px; border: 1px solid #e8ccb1; background: rgba(255, 255, 255, .65); }
+.finale-heading h1 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(34px, 5.8vw, 68px); line-height: 1.08; letter-spacing: -.045em; margin: 14px 0 6px; color: var(--paper-ink); }
+.finale-heading p { color: #766251; font-size: clamp(12px, 1.5vw, 16px); margin: 0; }
+.finale-skip { margin-top: 17px; background: #fffaf1; color: #754b36; border: 1px solid #e3cbb2; box-shadow: 0 3px 0 #e9d3bd; min-height: 39px; padding: 9px 16px; font-size: 11px; }
+.finale-skip:hover:not(:disabled) { background: #ffe4c3; }
+.finale-players { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 1330px; margin: 0 auto; gap: 15px; }
+.finale-player {
+  min-width: 0; padding: 15px; border-radius: 20px;
+  border: 1px solid #e6d2b9;
+  background: linear-gradient(135deg, #fffdf5, #f8e9d5);
+  box-shadow: 0 5px 0 rgba(110, 74, 47, .08), 0 14px 35px rgba(90, 54, 32, .07);
+  transition: border-color .3s, box-shadow .3s, transform .3s;
+}
+.finale-player.is-spotlit { border-color: var(--paper-coral); box-shadow: 0 0 0 3px rgba(255, 116, 94, .18), 0 12px 35px rgba(199, 111, 81, .16); transform: translateY(-3px); }
+.finale-player.is-counting { border-color: #d7b05a; box-shadow: 0 0 0 3px rgba(245, 189, 88, .2), 0 10px 25px rgba(90, 54, 32, .10); }
+.finale-player.is-scored { background: linear-gradient(135deg, #fffcf4, #f4eace); }
+.finale-player.has-bonus .finale-player-top::after { content: '✦'; color: var(--paper-coral); font-size: 23px; animation: paper-spark .75s ease-out both; }
+.finale-you { outline: 2px dashed rgba(115, 134, 91, .45); outline-offset: -7px; }
+.finale-player-top { display: flex; align-items: center; gap: 8px; min-height: 45px; margin-bottom: 12px; }
+.finale-player-top .avatar { width: 34px; height: 34px; font-size: 10px; flex-shrink: 0; border-radius: 50%; }
+.finale-player-top > div:nth-child(2) { min-width: 0; flex: 1; }
+.finale-player-top strong { display: block; font-size: 12px; line-height: 1.3; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.finale-player-top small { display: block; font-size: 9px; color: #977d65; white-space: nowrap; }
+.finale-score-wrap { text-align: right; margin-left: auto; min-width: 45px; }
+.finale-score-wrap output { display: block; font-size: 25px; line-height: 1; font-weight: 950; color: #bd5a3b; font-variant-numeric: tabular-nums; }
+.finale-score-wrap small { font-size: 8px; white-space: nowrap; }
+.finale-score-wrap output.score-pop { animation: paper-score-pop .23s cubic-bezier(.18,1.55,.4,1) both; }
+.finale-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.finale-tile { display: block; aspect-ratio: 7 / 9; position: relative; perspective: 500px; min-width: 0; }
+.finale-tile-inner { display: block; width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .48s cubic-bezier(.2,.82,.28,1.1), opacity .28s; }
+.finale-tile.is-flipped .finale-tile-inner { transform: rotateY(180deg); }
+.finale-tile-back, .finale-tile-front { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.finale-tile-front { transform: rotateY(180deg); }
+.finale-tile .playing-card { width: 100%; height: 100%; border-radius: 7px; border-width: 1px; box-shadow: 0 3px 0 rgba(83, 46, 18, .15), 0 5px 8px rgba(83, 46, 18, .08); }
+.finale-tile .playing-card .card-number { font-size: clamp(17px, 2.1vw, 30px); }
+.finale-tile .playing-card .card-corner { font-size: 9px; }
+.finale-tile .playing-card .card-decoration { font-size: clamp(25px, 3.5vw, 47px); }
+.finale-tile .playing-card .back-star { font-size: clamp(17px, 2.2vw, 30px); }
+.finale-tile .playing-card .back-name { font-size: 7px; }
+.finale-tile.is-fresh .finale-tile-front { filter: drop-shadow(0 0 5px rgba(255, 116, 94, .45)); }
+.finale-tile-gone { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; color: #a6b187; font-size: 22px; pointer-events: none; }
+.finale-tile.is-removed .finale-tile-inner { opacity: 0; transform: translateY(-8px) scale(.66) rotate(-10deg); }
+.finale-tile.is-removed .finale-tile-gone { opacity: 1; transition: opacity .25s .1s; }
+.finale-tile.is-counted { animation: paper-count-tile .28s ease-out; }
+.finale-doubled-note { display: none; color: #b45139; margin-top: 8px; font-size: 10px; font-weight: 900; letter-spacing: .02em; }
+.finale-player.is-doubled .finale-doubled-note { display: block; animation: paper-score-pop .3s ease-out both; }
+.finale-foot { max-width: 1330px; margin: 18px auto 0; display: flex; justify-content: space-between; gap: 10px; color: #977d65; font-size: 10px; }
+@keyframes paper-spark { 0% { opacity: 0; transform: translateY(9px) scale(.4) rotate(-55deg); } 60% { opacity: 1; transform: translateY(-5px) scale(1.3) rotate(12deg); } 100% { opacity: .9; transform: none; } }
+@keyframes paper-score-pop { 0% { transform: scale(.72); } 70% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes paper-count-tile { 0% { transform: translateY(0); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0); } }
+@media (max-width: 1050px) { .finale-players { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .finale-players { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .finale-page { padding: 23px 10px 38px; } .finale-player { padding: 10px; border-radius: 13px; } .finale-hand { gap: 3px; } .finale-player-top { gap: 5px; } .finale-player-top .avatar { width: 25px; height: 25px; } .finale-player-top strong { font-size: 10px; } .finale-score-wrap output { font-size: 18px; } .finale-score-wrap small { font-size: 7px; } .finale-tile .playing-card .card-number { font-size: clamp(14px, 4vw, 23px); } .finale-tile .playing-card .card-decoration { font-size: clamp(15px, 5vw, 30px); } .finale-tile .playing-card .card-corner { font-size: 6px; } .finale-tile .playing-card .back-star { font-size: 16px; } .finale-heading { margin-bottom: 17px; } .finale-heading h1 { font-size: 37px; } }
+@media (prefers-reduced-motion: reduce) {
+  .finale-page *, .finale-page *::before, .finale-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* À 2 ou 3 joueurs, le plateau final reste centré plutôt que collé à gauche. */
+@media (min-width: 701px) {
+  .finale-players:has(> :nth-child(2):last-child) { max-width: 650px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finale-players:has(> :nth-child(3):last-child) { max-width: 960px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -5,7 +5,7 @@ const toastEl = document.querySelector('#toast');
 const state = {
   user: null, socket: null, room: null, rooms: [], screen: 'home',
   invited: new URLSearchParams(location.search).get('room')?.toUpperCase() || '',
-  entering: false, help: false, scores: false, guestBusy: false, connected: false
+  entering: false, help: false, scores: false, guestBusy: false, connected: false, finale: null
 };
 const COLORS = ['violet', 'coral', 'teal', 'blue', 'amber', 'rose', 'lime', 'indigo'];
 const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,6 +20,106 @@ let renderScheduled = false;
 let lastHeaderHTML = null;
 let lastPageHTML = null;
 let lastOverlayHTML = null;
+let finaleSequence = 0;
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shortWait = ms => new Promise(resolve => setTimeout(resolve, ms));
+function resetFinale() {
+  finaleSequence++;
+  state.finale = null;
+}
+function startFinale(room) {
+  const token = ++finaleSequence;
+  state.finale = { roomCode: room.code, round: room.game.round, token };
+  scheduleRender();
+  // Le premier RAF peint la page. Le second lance les animations après insertion.
+  requestAnimationFrame(() => requestAnimationFrame(() => void playFinale(token)));
+}
+function activeFinale(token) {
+  return state.finale?.token === token && state.screen === 'room' &&
+    state.room?.code === state.finale.roomCode && state.room?.game?.round === state.finale.round &&
+    ['round_end', 'game_over'].includes(state.room?.game?.status);
+}
+function updateFinaleTitle(title, subtitle) {
+  const heading = document.querySelector('[data-finale-title]');
+  const detail = document.querySelector('[data-finale-subtitle]');
+  if (heading) heading.textContent = title;
+  if (detail) detail.textContent = subtitle;
+}
+function signedNumber(n) { return n > 0 ? `+${n}` : String(n); }
+async function playFinale(token) {
+  if (!activeFinale(token)) return;
+  const room = state.room, g = room.game;
+  const step = reducedMotion() ? 0 : 105;
+  const pause = async ms => {
+    await shortWait(reducedMotion() ? 0 : ms);
+    return activeFinale(token);
+  };
+  if (!await pause(650)) return;
+  updateFinaleTitle('Les dernières cartes !', 'Regardez les cartes cachées se révéler…');
+  const order = [room.me, ...room.players.filter(p => p.id !== room.me).map(p => p.id)];
+  for (const id of order) {
+    if (!activeFinale(token)) return;
+    const panel = document.querySelector(`[data-final-player="${id}"]`);
+    panel?.classList.add('is-spotlit');
+    panel?.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'instant' : 'smooth' });
+    const snapshot = g.result.reveal.find(item => item.id === id);
+    if (snapshot) for (let i = 0; i < 12; i++) {
+      if (!snapshot.removedBefore[i] && !snapshot.faceBefore[i]) {
+        const tile = panel?.querySelector(`[data-final-index="${i}"]`);
+        tile?.classList.add('is-flipped', 'is-fresh');
+        if (!await pause(step)) return;
+      }
+    }
+    if (!await pause(170)) return;
+    panel?.classList.remove('is-spotlit');
+  }
+  let removedCount = 0;
+  for (const player of room.players) {
+    const before = g.result.reveal.find(item => item.id === player.id);
+    const panel = document.querySelector(`[data-final-player="${player.id}"]`);
+    if (!before) continue;
+    for (let i = 0; i < 12; i++) {
+      if (g.hands[player.id]?.[i]?.removed && !before.removedBefore[i]) {
+        panel?.querySelector(`[data-final-index="${i}"]`)?.classList.add('is-removed');
+        panel?.classList.add('has-bonus');
+        removedCount++;
+      }
+    }
+  }
+  updateFinaleTitle(removedCount ? 'Colonnes éliminées ✨' : 'Toutes les cartes sont révélées !',
+    removedCount ? 'Les colonnes de trois cartes identiques s’envolent !' : 'Place au calcul des scores.');
+  if (!await pause(removedCount ? 800 : 450)) return;
+  updateFinaleTitle('On compte les points !', 'Chaque carte rejoint le compteur de son joueur.');
+  for (const player of room.players) {
+    if (!activeFinale(token)) return;
+    const panel = document.querySelector(`[data-final-player="${player.id}"]`);
+    const scoreEl = panel?.querySelector('[data-finale-score]');
+    const totalEl = panel?.querySelector('[data-finale-total]');
+    panel?.classList.add('is-counting');
+    let running = 0;
+    if (scoreEl) scoreEl.textContent = '0';
+    for (let i = 0; i < 12; i++) {
+      const card = g.hands[player.id]?.[i];
+      if (!card || card.removed) continue;
+      running += card.value;
+      panel?.querySelector(`[data-final-index="${i}"]`)?.classList.add('is-counted');
+      if (scoreEl) { scoreEl.textContent = signedNumber(running); scoreEl.classList.remove('score-pop'); void scoreEl.offsetWidth; scoreEl.classList.add('score-pop'); }
+      if (!await pause(82)) return;
+    }
+    if (g.result.doubledId === player.id) {
+      panel?.classList.add('is-doubled');
+      if (!await pause(400)) return;
+    }
+    if (scoreEl) scoreEl.textContent = signedNumber(g.result.scores[player.id]);
+    if (totalEl) totalEl.textContent = `${g.result.totals[player.id]} pts au total`;
+    panel?.classList.remove('is-counting');
+    panel?.classList.add('is-scored');
+    if (!await pause(180)) return;
+  }
+  updateFinaleTitle('Voilà les résultats !', 'Tous les scores sont calculés.');
+  if (!await pause(850)) return;
+  if (activeFinale(token)) { resetFinale(); scheduleRender(); }
+}
 // Coalesce plusieurs événements temps réel dans une seule image de rendu.
 function scheduleRender() {
   if (renderScheduled) return;
@@ -99,7 +199,7 @@ function enterRoom(code, type='room:join') {
   dispatch({type, code});
 }
 function showHome() {
-  state.screen = 'home'; state.room = null; state.entering=false; setURL('');
+  resetFinale(); state.screen = 'home'; state.room = null; state.entering=false; setURL('');
   dispatch({type:'lobby:list'}); render();
 }
 function connect() {
@@ -121,7 +221,15 @@ function connect() {
     let msg; try { msg=JSON.parse(event.data); } catch { return; }
     if (msg.type === 'room:state') {
       if (state.entering || state.screen === 'room') {
-        state.room = msg.room; state.screen = 'room'; state.entering = false; setURL(msg.room.code); scheduleRender();
+        const previous = state.room;
+        const isEnding = previous?.code === msg.room.code && previous.game?.status === 'playing' &&
+          ['round_end', 'game_over'].includes(msg.room.game?.status) && Array.isArray(msg.room.game?.result?.reveal);
+        if (state.finale && (msg.room.code !== state.finale.roomCode ||
+            msg.room.game?.round !== state.finale.round ||
+            !['round_end', 'game_over'].includes(msg.room.game?.status))) resetFinale();
+        state.room = msg.room; state.screen = 'room'; state.entering = false; setURL(msg.room.code);
+        if (isEnding && !reducedMotion()) startFinale(msg.room);
+        else scheduleRender();
       }
     } else if (msg.type === 'lobby:rooms') {
       state.rooms = msg.rooms; if (state.screen === 'home') scheduleRender();
@@ -258,6 +366,28 @@ function renderScorePanel(room) {
 function renderActivity(room) {
   return `<div class="activity-box"><div class="panel-title"><h3>La vie de la table</h3><span class="live-indicator"><span></span> EN DIRECT</span></div><div class="activity-list">${room.game.logs.slice(-5).reverse().map(item=>`<div class="activity-line"><span class="activity-dot"></span><span>${html(item.text)}</span></div>`).join('')}</div></div>`;
 }
+function renderFinale(room) {
+  const g = room.game;
+  const reveal = new Map(g.result.reveal.map(p => [p.id, p]));
+  return `<div class="finale-page" role="region" aria-label="Révélation des cartes et décompte de la manche">
+    <div class="finale-heading"><span class="finale-eyebrow">✦ MANCHE ${g.round} · LE GRAND FINAL ✦</span>
+      <h1 data-finale-title>Dernier tour !</h1><p data-finale-subtitle>Un peu de suspense avant les scores…</p>
+      <button class="btn finale-skip" data-action="skip-finale">Passer l’animation ${icon('arrow')}</button></div>
+    <div class="finale-players">${room.players.map((player, i) => {
+      const snapshot = reveal.get(player.id);
+      return `<section class="finale-player ${player.id === room.me ? 'finale-you' : ''}" data-final-player="${html(player.id)}">
+        <div class="finale-player-top">${avatar(player,i)}<div><strong>${html(player.name)}</strong><small>${player.id === room.me ? 'Tes cartes' : g.finisherId === player.id ? 'A terminé en premier' : 'Son plateau'}</small></div>
+          <div class="finale-score-wrap"><output data-finale-score aria-label="Points de la manche">—</output><small data-finale-total>Décompte à venir</small></div></div>
+        <div class="finale-hand">${g.hands[player.id].map((card, index) => {
+          const wasRemoved = !!snapshot?.removedBefore[index];
+          const wasHidden = !snapshot?.faceBefore[index] && !wasRemoved;
+          return `<span class="finale-tile ${wasRemoved ? 'is-removed' : wasHidden ? '' : 'is-flipped'}" data-final-index="${index}">
+            <span class="finale-tile-inner"><span class="finale-tile-back">${cardBack()}</span><span class="finale-tile-front">${cardFace(card.value)}</span></span><span class="finale-tile-gone" aria-hidden="true">✦</span></span>`;
+        }).join('')}</div><span class="finale-doubled-note">Points doublés ×2</span></section>`;
+    }).join('')}</div>
+    <div class="finale-foot"><span>✷ Les scores sont validés par le serveur.</span><span>Paper Play + Spark</span></div>
+  </div>`;
+}
 function renderGame(room) {
   const g=room.game;
   if (g.status==='round_end'||g.status==='game_over') return renderResults(room);
@@ -292,7 +422,8 @@ function renderHelpModal() {
 function render() {
   renderHeader();
   const page = !state.user ? renderGuest() : state.screen === 'room' && state.room
-    ? (state.room.game ? renderGame(state.room) : renderLobby(state.room)) : renderHome();
+    ? (state.finale && state.room.game?.result?.reveal ? renderFinale(state.room)
+      : state.room.game ? renderGame(state.room) : renderLobby(state.room)) : renderHome();
   if (page !== lastPageHTML) { root.innerHTML = page; lastPageHTML = page; }
   const modal = state.help ? renderHelpModal() : state.scores && state.room?.game ? renderScoresModal() : '';
   if (modal !== lastOverlayHTML) { overlay.innerHTML = modal; lastOverlayHTML = modal; }
@@ -323,6 +454,7 @@ document.addEventListener('click',async event=>{
   if (action==='help'){state.help=true;state.scores=false;render();return;}
   if (action==='scores'){state.scores=true;state.help=false;render();return;}
   if (action==='dismiss'||action==='close-modal'){state.help=false;state.scores=false;render();return;}
+  if (action==='skip-finale'){resetFinale();scheduleRender();return;}
   if (action==='home'){if(state.user)showHome();return;}
   if (action==='change-name') {
     const name=prompt('Choisis ton nouveau pseudo (2 à 18 caractères) :',state.user?.name||'');

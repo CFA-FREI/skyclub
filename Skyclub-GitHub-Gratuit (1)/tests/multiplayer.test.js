@@ -120,6 +120,15 @@ await test('Salons anonymes, 8 joueurs, confidentialité, manches et reconnexion
     assert.ok(moves<200,'La manche doit prendre fin');
     assert.ok(['round_end','game_over'].includes(clients[0].latest.game.status));
     assert.equal(clients[0].latest.game.round,1);
+    const finale = clients[0].latest.game.result.reveal;
+    assert.equal(finale.length,8,'Snapshot de révélation disponible uniquement après la manche');
+    for(const snap of finale) {
+      assert.equal(snap.faceBefore.length,12);
+      assert.equal(snap.removedBefore.length,12);
+      assert.ok(snap.faceBefore.every(value=>typeof value==='boolean'));
+      assert.ok(snap.removedBefore.every(value=>typeof value==='boolean'));
+      assert.ok(!Object.hasOwn(snap,'values'),'Aucune valeur secrète dans les métadonnées d’animation');
+    }
     for(const p of players.slice(0,8)) {
       assert.equal(clients[0].latest.game.scores[p.user.id].length,1);
       assert.ok(clients[0].latest.game.hands[p.user.id].every(c=>c.face||c.removed));

@@ -234,6 +234,13 @@ function makeRound(room, round) {
 }
 function scoreRound(room) {
   const g = room.game;
+  // Snapshot non sensible : seuls les indices/états précédents sont transmis,
+  // et uniquement APRÈS la fin de la manche. Les valeurs restent secrètes avant.
+  const reveal = room.players.map(p => ({
+    id: p.id,
+    faceBefore: g.hands[p.id].map(c => !!c.face),
+    removedBefore: g.hands[p.id].map(c => !!c.removed)
+  }));
   const rawScores = {};
   for (const p of room.players) {
     const hand = g.hands[p.id];
@@ -261,7 +268,9 @@ function scoreRound(room) {
   g.drawn = null;
   g.drawnSource = null;
   g.lastFinisherId = finisher;
-  g.result = { rawScores, scores, totals, winnerIds: ended ? Object.keys(totals).filter(id => totals[id] === best) : [], doubledId: scores[finisher] !== rawScores[finisher] ? finisher : null };
+  g.result = { rawScores, scores, totals, reveal,
+    winnerIds: ended ? Object.keys(totals).filter(id => totals[id] === best) : [],
+    doubledId: scores[finisher] !== rawScores[finisher] ? finisher : null };
   addLog(g, ended ? 'La partie est terminée ! 🏆' : `Fin de la manche ${g.round} : les scores sont calculés.`);
 }
 function finishTurn(room, user) {
