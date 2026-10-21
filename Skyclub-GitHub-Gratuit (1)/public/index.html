@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f6fc" />
+  <meta name="description" content="Skyclub : retrouve tes amis autour d’une partie de cartes en ligne, de 2 à 8 joueurs. Salons privés et score automatique." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>Skyclub — Le jeu de cartes entre amis</title>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="top-glow" aria-hidden="true"></div>
+    <header class="site-header" id="header"></header>
+    <main id="app" aria-live="polite"><div class="loading"><div class="loading-visual">✳</div><p>Préparation de la table...</p></div></main>
+    <footer class="site-footer" id="footer"><span>Fait pour les soirées entre amis <span class="footer-heart">♥</span></span><span>Skyclub est un projet indépendant, non affilié à Magilano.</span></footer>
+  </div>
+  <div id="overlay"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

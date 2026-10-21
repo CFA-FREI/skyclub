@@ -1,0 +1,8 @@
+.git
+.gitignore
+node_modules
+data
+*.log
+*.png
+tests
+README.md

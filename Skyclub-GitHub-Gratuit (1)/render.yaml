@@ -1,0 +1,20 @@
+# Skyclub / parties entre amis, sur l'offre gratuite de Render.
+# Aucun mot de passe ni secret dans le depot.
+# Attention : les salons et sessions sont temporaires sur Render Free.
+services:
+  - type: web
+    name: skyclub
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install --ignore-scripts --no-audit --no-fund && npm test
+    startCommand: npm start
+    healthCheckPath: /api/me
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: '1'

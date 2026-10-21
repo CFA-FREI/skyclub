@@ -1,0 +1,21 @@
+services:
+  skyclub:
+    build: .
+    restart: unless-stopped
+    stop_grace_period: 15s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/me').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      DATA_DIR: /app/data
+      TRUST_PROXY: "1"
+    volumes:
+      - skyclub-data:/app/data
+volumes:
+  skyclub-data:
