@@ -5,6 +5,7 @@ services:
   - type: web
     name: skyclub
     runtime: node
+    rootDir: "Skyclub-GitHub-Gratuit (1)"
     region: frankfurt
     plan: free
     buildCommand: npm install --ignore-scripts --no-audit --no-fund && npm test
