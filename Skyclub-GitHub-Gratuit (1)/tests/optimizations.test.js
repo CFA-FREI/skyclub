@@ -84,6 +84,17 @@ test('Compression HTTP, ETag et sauvegarde/reconnexion après redémarrage', asy
       assert.equal(head.body.length,0);
       assert.equal(Number(head.headers['content-length']),br.body.length);
     }
+    // Les illustrations Paper Play sont servies depuis une liste autorisée,
+    // avec le même cache HTTP et sans exposition du système de fichiers.
+    for (const name of ['art/cloud-mark.svg', 'art/paper-landscape.svg', 'art/sparkle.svg']) {
+      const illustration = await rawRequest('/' + name);
+      const compressed = await rawRequest('/' + name, {'accept-encoding': 'br'});
+      assert.equal(illustration.status, 200);
+      assert.equal(illustration.headers['content-type'], 'image/svg+xml');
+      assert.equal(compressed.headers['content-encoding'], 'br');
+      assert.deepEqual(zlib.brotliDecompressSync(compressed.body), illustration.body);
+    }
+    assert.equal((await rawRequest('/art/not-allowed.svg')).status,404);
     assert.equal((await rawRequest('/../../server.js')).status,404);
     const headers = (await rawRequest('/')).headers;
     assert.match(headers['content-security-policy'],/frame-ancestors 'none'/);

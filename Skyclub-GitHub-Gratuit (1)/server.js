@@ -589,7 +589,7 @@ const MIMES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=
 // Prélecture + Brotli/Gzip au démarrage : aucune lecture disque ni compression
 // dans le chemin critique des requêtes. ETag => réponses HTTP 304 très légères.
 const assets = new Map();
-for (const name of ['index.html', 'app.js', 'style.css', 'favicon.svg']) {
+for (const name of ['index.html', 'app.js', 'style.css', 'favicon.svg', 'art/cloud-mark.svg', 'art/paper-landscape.svg', 'art/sparkle.svg']) {
   const source = fs.readFileSync(path.join(PUBLIC, name));
   assets.set('/' + name, {
     type: MIMES[path.extname(name)],
